@@ -7,6 +7,12 @@ Flask + SQLite + 브라우저로 만든 내 컴퓨터용 outliner예요.
 - **맥**: `Outliner.command`를 더블클릭해요. 처음 한 번 실행하면 이 맥의 응용 프로그램 폴더에 `Outliner.app`을 만들어요 (`/Applications` — 쓸 수 없는 계정이면 `~/Applications`) — 다음부터는 그걸로 열어요 (Launchpad · Spotlight에서 Outliner).
   - 다른 곳(웹 · 메신저 · 클라우드)에서 받은 폴더는 맥이 격리 표시를 붙여서 `Outliner.command`가 '확인되지 않은 개발자'로 막혀요. 클라우드 앱이 파일을 다시 받으면 표시가 또 붙어요. 처음 한 번만 터미널에서 `xattr -dr com.apple.quarantine <폴더>` 하거나 시스템 설정 › 개인정보 보호 및 보안 › '그래도 열기'로 열면, 실행할 때 폴더 전체에서 표시를 떼고 위 앱을 만들어요.
   - `Outliner.app`은 이 맥에서 만든 앱이라 격리 표시가 없고, `Outliner.command`를 bash로 실행해서 그 파일에 표시가 다시 붙어도 막히지 않아요. 터미널 창 없이 열려요 (기록: `~/Library/Logs/Outliner.log`, 준비 · 오류는 알림 · 경고 창으로). 폴더를 옮기면 `Outliner.command`를 한 번 더 실행하면 앱을 다시 만들어요. 아이콘은 앱 화면 아이콘과 같은 ⇥ (`src/mac/`).
+- **pip 설치 파일(맥 · 윈도우 공용 — 파이썬 3.9 이상만 있으면 돼요)**: 이 맥에서 `bash packaging/pip/build_whl.sh` → `outliner/outliner-<버전>-py3-none-any.whl` 파일 하나가 생겨요. AirDrop · USB · 메신저 … 아무렇게나 옮겨서
+  - 설치 · 업데이트: `python3 -m pip install --upgrade outliner-….whl` (윈도우: `py -m pip install --upgrade outliner-….whl`) — flask도 같이 설치돼요. 버전이 만든 시각이라 새 파일이면 늘 바뀌어요
+  - 실행: `python3 -m outliner` (윈도우: `py -m outliner`, PATH가 잡혀 있으면 `outliner`만) — 서버를 켜고 창(크롬 · 윈도우는 Edge 앱 모드)을 열어요. 옵션은 `--port` · `--fullscreen`
+  - pip으로 받은 파일은 파이썬이 읽을 뿐이라 '확인되지 않은 개발자' · SmartScreen으로 막히지 않아요
+  - 데이터는 코드와 따로 — 맥 `~/Library/Application Support/Outliner`(dmg 앱과 같은 곳) · 윈도우 `%APPDATA%\Outliner` (`OUTLINER_DB`로 바꿀 수 있어요). 업데이트 · `pip uninstall outliner` 해도 그대로예요
+  - Homebrew 파이썬이 `externally-managed-environment`로 거절하면 python.org 파이썬을 쓰거나 `pipx install outliner-….whl`
 - **설치 파일(파이썬까지 들어 있어서 따로 설치할 게 없어요)** — 만들기는 맥에서:
   - **맥 `Outliner.dmg`** (`bash packaging/mac/build_dmg.sh`): 열어서 `Outliner.app`을 Applications로 끌어다 놓아요. Apple Silicon · Intel 파이썬이 둘 다 들어 있어요. 창은 크롬이 아니라 앱 자체 창(pywebview — 맥 내장 WebKit)이라 크롬이 없어도 돼요 · 새 창은 파일 › 새 창(⌘N). 데이터는 `~/Library/Application Support/Outliner` (이 폴더 방식의 `data/`와 따로 — 옮기려면 `data/` 안의 것을 그리로 복사). 기록은 `~/Library/Logs/Outliner.log`. 애플 개발자 서명이 없어서 다른 맥에서는 처음 한 번 '그래도 열기'(시스템 설정 › 개인정보 보호 및 보안)가 필요해요.
   - **안드로이드 `Outliner.apk`** (`bash packaging/android/build_apk.sh` — JDK 17+ · 안드로이드 SDK · python3.12 필요): 설치만 하면 열려요. 앱 안의 파이썬(Chaquopy)이 서버를 `127.0.0.1:4301`에 켜고 WebView로 보여 줘요. 데이터는 앱 안(앱을 지우면 같이 지워져요 — Dropbox 맞추기나 내보내기로 옮겨요). 내려받기는 휴대폰 '다운로드' 폴더로, 바깥 링크(Dropbox 허용하기 …)는 휴대폰 브라우저로 열려요. 서명 키는 `~/.android/outliner-release.jks` — 같은 키로 만들어야 업데이트 설치가 돼요.
@@ -22,7 +28,7 @@ Flask + SQLite + 브라우저로 만든 내 컴퓨터용 outliner예요.
 Outliner.command   맥 실행 파일 (더블클릭)
 install.sh         다른 맥 설치 · 업데이트 (curl … | bash — 공개 저장소 kimjungbeen/outliner에서 받아요)
 requirements.txt   필요한 파이썬 패키지
-packaging/         publish_github.sh(공개 저장소에 올리기) · 설치 파일 만들기 — mac/build_dmg.sh(파이썬 · pywebview를 넣은 Outliner.app → dmg) · android/(Chaquopy WebView 앱 · build_apk.sh)
+packaging/         publish_github.sh(공개 저장소에 올리기) · 설치 파일 만들기 — pip/build_whl.sh(맥 · 윈도우 공용 .whl — 실행 입구 pip/__main__.py) · mac/build_dmg.sh(파이썬 · pywebview를 넣은 Outliner.app → dmg) · android/(Chaquopy WebView 앱 · build_apk.sh)
 src/               앱 코드
   server.py        서버 (Flask + SQLite)
   launcher.py      실행 관리: 서버 켜기 · 중복 실행 막기 · Chrome 앱 창 열기(pywebview가 있으면 자체 창) · 창을 다 닫으면 서버 끄기 (실행 파일이 이걸 실행해요)

@@ -20,7 +20,7 @@ from flask import Flask, Response, g, jsonify, request, send_file, send_from_dir
 BASE = Path(__file__).parent  # src/ (코드와 static/)
 ROOT = BASE.parent  # 프로젝트 폴더 (data/ · plugins/)
 DB_PATH = Path(os.environ.get("OUTLINER_DB") or ROOT / "data" / "app.db")  # 테스트용으로 바꿀 수 있어요
-PLUGIN_DIR = ROOT / "plugins"
+PLUGIN_DIR = BASE / "plugins" if (BASE / "plugins").is_dir() else ROOT / "plugins"  # pip으로 설치하면 코드 안에 같이 들어 있어요
 FILES_DIR = DB_PATH.parent / f"{DB_PATH.stem}-files"  # 첨부 파일(이미지·영상·PDF)이 저장되는 곳
 AUDIO_EXT = {"mp3", "wav", "m4a", "aac", "ogg", "oga", "opus", "flac", "weba"}
 ATTACH_EXT = {"png", "jpg", "jpeg", "gif", "webp", "avif", "bmp", "mp4", "webm", "mov", "m4v", "ogv", "pdf"} | AUDIO_EXT
@@ -1748,6 +1748,8 @@ def chrome_path():
         "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
         "/Applications/Chromium.app/Contents/MacOS/Chromium",
     ]
+    for base in filter(None, [os.environ.get("PROGRAMFILES"), os.environ.get("PROGRAMFILES(X86)"), os.environ.get("LOCALAPPDATA")]):  # 윈도우 (pip 설치)
+        cands += [f"{base}/Microsoft/Edge/Application/msedge.exe", f"{base}/Google/Chrome/Application/chrome.exe"]
     return next((c for c in cands if Path(c).exists()), None)
 
 
@@ -1958,7 +1960,10 @@ def attachments_reveal():
     import subprocess
     FILES_DIR.mkdir(parents=True, exist_ok=True)
     try:
-        subprocess.Popen(["open", str(FILES_DIR)])  # 맥 Finder (안드로이드 앱에서는 열 수 없어서 아래 오류로)
+        if os.name == "nt":  # 윈도우 탐색기 (pip 설치)
+            os.startfile(str(FILES_DIR))  # noqa: S606
+        else:  # 맥 Finder (안드로이드 앱에서는 열 수 없어서 아래 오류로)
+            subprocess.Popen(["open", str(FILES_DIR)])
     except Exception as e:  # 탐색기를 못 여는 환경
         return jsonify(error=str(e), folder=str(FILES_DIR)), 500
     return jsonify(ok=True, folder=str(FILES_DIR))
