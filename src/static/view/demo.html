@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>view.js 데모</title>
+  <style>body { margin: 0; background: var(--v-bg); }</style>
+</head>
+<body>
+<script type="module">
+  // 이 페이지에는 HTML · CSS가 거의 없어요 — 화면은 모두 아래 코드로 (view.js만 있으면 어느 프로젝트에서나)
+  import { mount, sheet, toast, VStack, HStack, Grid, Text, Rich, Button, TextField, Toggle, Segmented, Picker, List, Spacer, Divider, Section, Meter, Badge, Actions, IconButton, Disclosure } from './view.js';
+
+  const TODOS = [{ t: '장보기', done: false }, { t: '책 반납', done: true }, { t: '운동', done: false }];
+
+  mount(document.body, { name: '', size: 'm', lang: 'ko', dark: false, todos: TODOS, draft: '' }, (s, set) => {
+    const left = s.todos.filter((x) => !x.done).length;
+    return VStack({ gap: 20 },
+      HStack(Text('view.js').font('largeTitle'), Badge('데모'), Spacer(),
+        IconButton('plus', async () => {
+          const r = await sheet({
+            title: '할 일 더하기', state: { t: '' },
+            body: (st, set2, close) => VStack({ gap: 12 },
+              TextField(st.t, (v) => set2({ t: v }), { placeholder: '무엇을 할까요', onSubmit: () => close(st.t) }).autofocus(),
+              Actions(Button('취소', () => close()), Button('더하기', () => close(st.t)).style('primary').disabled(!st.t.trim())),
+            ),
+          });
+          if (r?.trim()) { set({ todos: [...s.todos, { t: r.trim(), done: false }] }); toast('더했어요'); }
+        }, '할 일 더하기')),
+      Rich('**상태 → 화면** 함수 하나로 그려요. `set()`을 부르면 바뀐 곳만 고쳐요.').color('mute'),
+
+      Section('할 일',
+        List(s.todos, (x, i) => HStack({ gap: 10 },
+          Toggle('', x.done, (v) => set({ todos: s.todos.map((y, j) => (j === i ? { ...y, done: v } : y)) })),
+          Text(x.t).opacity(x.done ? 0.45 : 1).grow(),
+          IconButton('trash', () => set({ todos: s.todos.filter((_, j) => j !== i) }), '지우기').revealOnHover(),
+        ).cls('v-row'), { empty: '할 일이 없어요' }),
+        HStack(Meter(s.todos.length ? 1 - left / s.todos.length : 0).grow(), Text(`${left}개 남음`).font('caption')),
+      ),
+      Divider(),
+
+      Section('입력',
+        Grid({ columns: 2, gap: 12 },
+          VStack({ gap: 4 }, Text('이름').font('callout').color('mute'), TextField(s.name, (v) => set({ name: v }), { placeholder: '이름' })),
+          VStack({ gap: 4 }, Text('언어').font('callout').color('mute'), Picker([['ko', '한국어'], ['en', 'English'], ['ja', '日本語']], s.lang, (v) => set({ lang: v }))),
+        ),
+        Segmented([['s', '작게'], ['m', '보통'], ['l', '크게']], s.size, (v) => set({ size: v })),
+        Toggle('어두운 화면', s.dark, (v) => { set({ dark: v }); document.documentElement.dataset.theme = v ? 'dark' : 'light'; }),
+        Text(`안녕하세요, ${s.name || '누군가'}님 (${s.lang} · ${s.size})`).font(s.size === 'l' ? 'title' : s.size === 's' ? 'caption' : 'body'),
+      ),
+
+      Disclosure('코드 보기', Text('mount(document.body, 상태, (s, set) => VStack(Text(…), Button(…, () => set({ … }))))').mono().wrap()),
+    ).padding(28).frame({ maxWidth: 640 }).css({ margin: '0 auto' });
+  });
+</script>
+</body>
+</html>

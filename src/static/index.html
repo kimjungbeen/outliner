@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko" class="booting">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content">
+  <title>outliner</title>
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="/icon-192.png" sizes="192x192" type="image/png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="/view/view.css" data-view-css>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main>
+    <nav id="crumbs" aria-label="경로"></nav>
+    <h1 id="title"></h1>
+    <div id="titleatt"></div>
+    <div id="tree"></div>
+    <button id="add" type="button" hidden>+ 항목 추가</button>
+    <input id="importfile" type="file" multiple hidden accept="image/*,video/*,audio/*,application/pdf,.pdf,.mp4,.webm,.mov,.m4v,.mp3,.wav,.m4a,.aac,.ogg,.oga,.opus,.flac,.weba,.json,.html,.htm,.md,.markdown,.txt,.db,.sqlite,.sqlite3,.zip">
+    <div id="hlbar" hidden role="status">
+      <button id="hl-prev" type="button" aria-label="이전 찾은 항목">▲</button>
+      <span id="hlcount"></span>
+      <button id="hl-next" type="button" aria-label="다음 찾은 항목">▼</button>
+      <button id="hl-off" type="button" aria-label="강조 끄기">✕</button>
+    </div>
+    <div id="selbar" hidden>
+      <span id="selcount"></span>
+      <button id="sel-copy" type="button">복사</button>
+      <span id="sel-cmds"></span><!-- 명령(플러그인)이 스스로 올리는 단추들 — addPaletteCommands의 selection -->
+      <button id="sel-del" type="button" title="선택한 항목 지우기 (Backspace)">지우기</button>
+      <button id="sel-clear" type="button">해제</button>
+    </div>
+    <nav id="mbar" aria-label="모바일 보조 키" hidden>
+      <div class="mbar-keys"></div>
+    </nav>
+  </main>
+  <div id="toast" role="status" hidden></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

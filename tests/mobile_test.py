@@ -1,0 +1,102 @@
+"""모바일 보조 키(Termux extra keys 형식) 테스트 (터치 화면 흉내). 사용: python3 tests/mobile_test.py <앱 포트>"""
+import sys
+import requests
+from playwright.sync_api import sync_playwright
+PORT = int(sys.argv[1]); BASE = f"http://127.0.0.1:{PORT}"
+fails = []
+def check(name, cond, extra=""):
+    print(("PASS " if cond else "FAIL ") + name, "" if cond else extra)
+    if not cond: fails.append(name)
+api = lambda p, m="GET", b=None: requests.request(m, BASE + p, json=b).json()
+R = api("/api/nodes", "POST", {"parent_id": None, "position": 0, "content": "모바일루트"})["id"]
+ids = [api("/api/nodes", "POST", {"parent_id": R, "position": i, "content": c})["id"] for i, c in enumerate(["첫째", "둘째", "셋째"])]
+tree = lambda: requests.get(BASE + f"/api/export?format=txt&ids={R}").text.splitlines()
+errors = []
+requests.put(BASE + "/api/plugin-data/core/cmd_keys", json={"value": {"map": {"Ctrl+K": "jump"}, "off": []}})  # 기본 단축키가 없는 명령 — 사용자가 ⌘/에서 하듯 지정해 두고 시작해요
+with sync_playwright() as p:
+    br = p.chromium.launch()
+    # 데스크톱(마우스)에서는 막대가 안 보여야 해요
+    pg = br.new_page(); pg.goto(f"{BASE}/#{R}"); pg.wait_for_selector("#tree .text")
+    check("마우스 화면에서는 도구 막대 숨김", not pg.locator("#mbar").is_visible()); pg.close()
+    ctx = br.new_context(viewport={"width": 390, "height": 760}, has_touch=True, is_mobile=True, device_scale_factor=2)
+    pg = ctx.new_page(); pg.on("pageerror", lambda e: errors.append(str(e)))
+    pg.goto(f"{BASE}/#{R}"); pg.wait_for_selector("#tree .text")
+    check("터치 화면에서는 보조 키 표시 (한 줄)", pg.locator("#mbar").is_visible() and pg.locator("#mbar .mbar-row").count() == 1)
+    rows = pg.eval_on_selector_all("#mbar .mbar-row", "rs => rs.map(r => [...r.children].map(b => b.dataset.k))")
+    check("기본 키: tab · 수식키 · 화살표만", rows == [["TAB", "SHIFT", "CTRL", "OPT", "CMD", "LEFT", "UP", "DOWN", "RIGHT"]], str(rows))
+    check("앱 단축키 버튼 · 명령 버튼 줄 없음", pg.locator("#mbar .mbar-cmds, #mbar [data-act], #mbar [data-cmd]").count() == 0)
+    bb = pg.locator("#mbar").bounding_box()
+    check("막대가 화면 맨 아래에 붙어 있음", abs(bb["y"] + bb["height"] - 760) <= 1, str(bb))
+    check("버튼이 누르기 편한 크기(높이 40px 이상, 가로 36px 이상)", all(b.evaluate("e => e.offsetHeight >= 40 && e.offsetWidth >= 36") for b in pg.locator("#mbar button").all()))
+    check("가로로 넘치지 않음", pg.evaluate("document.documentElement.scrollWidth <= innerWidth"))
+    pg.locator("#tree .text", has_text="둘째").tap(); pg.wait_for_timeout(200)
+    pg.locator('#mbar [data-k=TAB]').tap(); pg.wait_for_timeout(600)
+    check("⇥ 들여쓰기: 둘째가 첫째의 자식", tree() == ["모바일루트", "\t첫째", "\t\t둘째", "\t셋째"], str(tree()))
+    check("버튼을 눌러도 커서가 그대로(키보드 안 닫힘)", pg.evaluate("document.activeElement.textContent") == "둘째")
+    pg.locator('#mbar [data-mod=shift]').tap(); pg.wait_for_timeout(200); pg.locator('#mbar [data-k=TAB]').tap(); pg.wait_for_timeout(600)
+    check("⇧ + ⇥ 내어쓰기", tree() == ["모바일루트", "\t첫째", "\t둘째", "\t셋째"], str(tree()))
+    # ⌘ ⇧ ⌥ : 다음 키에 붙어서 데스크톱 단축키처럼
+    tapb = lambda sel: (pg.locator(f"#mbar {sel}").scroll_into_view_if_needed(), pg.locator(f"#mbar {sel}").tap(), pg.wait_for_timeout(250))
+    pg.locator("#tree .text", has_text="첫째").tap(); pg.wait_for_timeout(200)
+    tapb('[data-mod=ctrl]'); tapb('[data-mod=shift]')
+    check("⌘ ⇧ 누르면 켜짐 표시", pg.locator("#mbar [data-mod].on").count() == 2)
+    tapb('[data-k=DOWN]'); pg.wait_for_timeout(500)
+    check("⌘ ⇧ + ↓ = 아래로 옮기기", tree() == ["모바일루트", "\t둘째", "\t첫째", "\t셋째"], str(tree()))
+    check("한 번 쓰면 꺼짐", pg.locator("#mbar [data-mod].on").count() == 0)
+    check("커서 그대로", pg.evaluate("document.activeElement.textContent") == "첫째")
+    tapb('[data-mod=ctrl]')
+    check("⌘를 누르면 키보드용 입력칸에 커서 (키보드가 올라와요)", pg.evaluate("document.activeElement.id") == "modcatch" and pg.evaluate("document.activeElement.type") == "password")
+    pg.keyboard.insert_text("k"); pg.wait_for_timeout(400)  # 휴대폰 키보드처럼 keydown 없이 글자만 들어오는 경우
+    check("⌘ + 키보드 k = 검색 창 (글자는 안 들어감)", pg.locator(".dlg-ov:not(.out) .palette").count() == 1 and "k" not in api(f"/api/view?parent={ids[0]}")["node"]["content"])
+    check("입력칸은 비워짐", pg.evaluate("document.getElementById('modcatch').value") == "")
+    pg.keyboard.press("Escape"); pg.wait_for_timeout(300)
+    pg.locator("#tree .text", has_text="첫째").tap(); pg.wait_for_timeout(200)
+    tapb('[data-mod=ctrl]'); tapb('[data-mod=ctrl]')
+    check("⌘ 두 번 = 고정", pg.locator("#mbar [data-mod=ctrl].lock").count() == 1)
+    pg.keyboard.insert_text("."); pg.wait_for_timeout(700)
+    check("고정된 ⌘ + . = 줌인", pg.evaluate("location.hash") == f"#{ids[0]}", pg.evaluate("location.hash"))
+    check("고정은 계속 켜져 있음", pg.locator("#mbar [data-mod=ctrl].on").count() == 1)
+    tapb('[data-mod=ctrl]')
+    check("한 번 더 누르면 해제", pg.locator("#mbar [data-mod].on").count() == 0)
+    pg.goto(f"{BASE}/#{R}"); pg.wait_for_selector("#tree .text"); pg.wait_for_timeout(300)
+    pg.locator("#tree .text", has_text="첫째").tap(); pg.wait_for_timeout(200)
+    tapb('[data-mod=ctrl]'); tapb('[data-mod=ctrl]'); pg.wait_for_timeout(400); tapb('[data-mod=ctrl]')  # 켰다가(고정 아님) 끄면
+    check("⌘를 다시 끄면 커서가 원래 항목으로", pg.evaluate("document.activeElement.textContent") == "첫째", pg.evaluate("document.activeElement.id || document.activeElement.textContent"))
+    tapb('[data-mod=ctrl]'); tapb('[data-mod=shift]'); tapb('[data-k=UP]'); pg.wait_for_timeout(500)
+    check("다시 ⌘ ⇧ ↑ 로 원래 자리", tree() == ["모바일루트", "\t첫째", "\t둘째", "\t셋째"], str(tree()))
+    # 입력 이벤트를 막을 수 없는 키보드: 글자가 입력칸에 들어오면 그걸 읽어 단축키로
+    pg.locator("#tree .text", has_text="셋째").tap(); pg.wait_for_timeout(200)
+    tapb('[data-mod=alt]')
+    pg.evaluate("(() => { const c = document.getElementById('modcatch'); c.value = 's'; c.dispatchEvent(new Event('input', { bubbles: true })); })()"); pg.wait_for_timeout(600)
+    check("⌥ + (막을 수 없는 입력) s = 달력 (calendar 플러그인의 단축키)", pg.locator("[data-f=cal]").count() == 1)
+    pg.keyboard.press("Escape"); pg.wait_for_timeout(200)
+    pg.goto(f"{BASE}/#{R}"); pg.wait_for_selector("#tree .text"); pg.wait_for_timeout(300)
+    pg.locator("#tree .text", has_text="둘째").tap(); pg.wait_for_timeout(200)
+    tapb('[data-mod=ctrl]'); pg.keyboard.insert_text("."); pg.wait_for_timeout(800)
+    check("⌘ + . 안으로(줌인)", pg.evaluate("location.hash") == f"#{ids[1]}" and "둘째" in pg.inner_text("#title"), pg.evaluate("location.hash"))
+    pg.locator("#title").tap(); pg.wait_for_timeout(200)
+    tapb('[data-mod=ctrl]'); pg.keyboard.insert_text(","); pg.wait_for_timeout(800)
+    check("⌘ + , 밖으로(줌아웃)", pg.evaluate("location.hash") == f"#{R}", pg.evaluate("location.hash"))
+    # ← → : 커서를 옮기고, 끝에서 한 번 더 누르면 이웃 항목으로
+    pg.locator("#tree .text", has_text="첫째").tap(); pg.wait_for_timeout(200)
+    pg.evaluate("(() => { const t = document.activeElement; getSelection().collapse(t.firstChild, 1); })()")
+    tapb('[data-k=RIGHT]')
+    check("→ 한 글자 오른쪽", pg.evaluate("getSelection().anchorOffset") == 2)
+    tapb('[data-k=RIGHT]')
+    check("→ 끝에서 다음 항목으로", pg.evaluate("document.activeElement.textContent") == "둘째")
+    tapb('[data-k=LEFT]')
+    check("← 한 글자 왼쪽", pg.evaluate("getSelection().anchorOffset") == 0 or pg.evaluate("document.activeElement.textContent") == "첫째")
+    # 배치 바꾸기 (Termux 형식) · 위로 밀면 popup 키
+    requests.put(BASE + "/api/plugin-data/core/mobile_keys", json={"value": [["ESC", {"key": "-", "popup": "|"}], ["CTRL", "TAB"]]})
+    pg.reload(); pg.wait_for_selector("#tree .text"); pg.wait_for_timeout(600)
+    check("저장한 배치로 그려짐", pg.eval_on_selector_all("#mbar .mbar-row button", "bs => bs.map(b => b.dataset.k)") == ["ESC", "-", "CTRL", "TAB"])
+    pg.locator("#tree .text", has_text="셋째").tap(); pg.wait_for_timeout(200)
+    pg.evaluate("(() => { const t = document.activeElement; getSelection().collapse(t.firstChild, 0); })()")
+    tapb('[data-k="-"]')
+    b = pg.locator('#mbar [data-k="-"]').bounding_box()
+    pg.mouse.move(b["x"] + b["width"] / 2, b["y"] + b["height"] / 2); pg.mouse.down(); pg.mouse.move(b["x"] + b["width"] / 2, b["y"] - 20); pg.mouse.up(); pg.wait_for_timeout(300)
+    check("누르면 - · 위로 밀면 |", pg.evaluate("document.activeElement.textContent").startswith("-|"), pg.evaluate("document.activeElement.textContent"))
+    requests.put(BASE + "/api/plugin-data/core/mobile_keys", json={"value": None})
+    check("콘솔 오류 없음", not errors, errors[:3])
+    ctx.close(); br.close()
+print("\n실패:", fails if fails else "없음"); sys.exit(1 if fails else 0)

@@ -1,0 +1,6 @@
+<resources>
+    <!-- 화면(WebView)의 prefers-color-scheme가 기기 다크 모드를 따르게 — 밝은/어두운 테마를 values-night로 나눠요 -->
+    <style name="AppTheme" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@android:color/white</item>
+    </style>
+</resources>
