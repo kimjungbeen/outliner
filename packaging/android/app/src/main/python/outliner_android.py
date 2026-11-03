@@ -4,7 +4,7 @@ import socket
 import sys
 import threading
 
-PREFERRED = 4301  # 4300은 Termux에서 켠 Outliner가 쓸 수 있어서 — 주소가 같아야 화면 설정(localStorage)이 이어져요
+PREFERRED = 4301  # 늘 같은 주소여야 화면 설정(localStorage)이 이어져요 (이미 설치한 앱과 맞춰 4301 그대로)
 _port = None
 
 

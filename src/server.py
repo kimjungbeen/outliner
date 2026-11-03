@@ -1748,8 +1748,6 @@ def chrome_path():
         "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
         "/Applications/Chromium.app/Contents/MacOS/Chromium",
     ]
-    for base in filter(None, [os.environ.get("PROGRAMFILES"), os.environ.get("PROGRAMFILES(X86)"), os.environ.get("LOCALAPPDATA")]):
-        cands += [f"{base}/Google/Chrome/Application/chrome.exe", f"{base}/Microsoft/Edge/Application/msedge.exe"]
     return next((c for c in cands if Path(c).exists()), None)
 
 
@@ -1958,15 +1956,9 @@ def pdf_text_put(name):
 def attachments_reveal():
     """첨부 폴더를 이 컴퓨터의 파일 탐색기(Finder)로 열어요. 이 서버는 내 컴퓨터에서만 접속되므로 가능해요."""
     import subprocess
-    import sys
     FILES_DIR.mkdir(parents=True, exist_ok=True)
     try:
-        if sys.platform.startswith("win"):
-            os.startfile(str(FILES_DIR))  # noqa: S606
-        elif sys.platform == "darwin":
-            subprocess.Popen(["open", str(FILES_DIR)])
-        else:
-            subprocess.Popen(["xdg-open", str(FILES_DIR)])
+        subprocess.Popen(["open", str(FILES_DIR)])  # 맥 Finder (안드로이드 앱에서는 열 수 없어서 아래 오류로)
     except Exception as e:  # 탐색기를 못 여는 환경
         return jsonify(error=str(e), folder=str(FILES_DIR)), 500
     return jsonify(ok=True, folder=str(FILES_DIR))

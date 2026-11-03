@@ -7,16 +7,11 @@ Flask + SQLite + 브라우저로 만든 내 컴퓨터용 outliner예요.
 - **맥**: `Outliner.command`를 더블클릭해요. 처음 한 번 실행하면 이 맥의 응용 프로그램 폴더에 `Outliner.app`을 만들어요 (`/Applications` — 쓸 수 없는 계정이면 `~/Applications`) — 다음부터는 그걸로 열어요 (Launchpad · Spotlight에서 Outliner).
   - 다른 곳(웹 · 메신저 · 클라우드)에서 받은 폴더는 맥이 격리 표시를 붙여서 `Outliner.command`가 '확인되지 않은 개발자'로 막혀요. 클라우드 앱이 파일을 다시 받으면 표시가 또 붙어요. 처음 한 번만 터미널에서 `xattr -dr com.apple.quarantine <폴더>` 하거나 시스템 설정 › 개인정보 보호 및 보안 › '그래도 열기'로 열면, 실행할 때 폴더 전체에서 표시를 떼고 위 앱을 만들어요.
   - `Outliner.app`은 이 맥에서 만든 앱이라 격리 표시가 없고, `Outliner.command`를 bash로 실행해서 그 파일에 표시가 다시 붙어도 막히지 않아요. 터미널 창 없이 열려요 (기록: `~/Library/Logs/Outliner.log`, 준비 · 오류는 알림 · 경고 창으로). 폴더를 옮기면 `Outliner.command`를 한 번 더 실행하면 앱을 다시 만들어요. 아이콘은 앱 화면 아이콘과 같은 ⇥ (`src/mac/`).
-- **윈도우**: `Outliner.bat`을 더블클릭해요.
-- **안드로이드(Termux)**: `pkg install unzip` → 압축 해제 → 그 폴더에서 처음 한 번 `bash Outliner.sh`. python · flask가 없으면 설치하고, **Termux:Widget** 바로가기 두 개(`~/.shortcuts/tasks/`)를 만든 뒤 켜고 크롬으로 열어요.
-  - 홈 화면에 Termux:Widget 위젯을 놓으면 **Outliner**(wake lock · 서버 켜기 · 크롬으로 열기, 이미 켜져 있으면 열기만 · 새 압축 파일을 풀었으면 서버를 새로 켜요) · **Outliner 끄기**(서버 끄기 · wake lock 풀기)가 보여요. 터미널 창 없이 뒤에서 실행돼요 (기록: `data/termux.log`).
-  - 예전 폴더나 손으로 켠 서버가 주소를 잡고 있으면 끄고 이 폴더 것으로 켜요. 폴더를 옮기면 옮긴 자리에서 `bash Outliner.sh`를 한 번 더.
-  - Termux와 Termux:Widget은 같은 곳(F-Droid 또는 GitHub)에서 받아야 해요. 위젯이 크롬을 열지 못하면 Termux에 '다른 앱 위에 표시' 권한을 줘요. Termux가 꺼지지 않게: 설정 › 애플리케이션 › Termux › 배터리 › 제한 없음.
 - **설치 파일(파이썬까지 들어 있어서 따로 설치할 게 없어요)** — 만들기는 맥에서:
   - **맥 `Outliner.dmg`** (`bash packaging/mac/build_dmg.sh`): 열어서 `Outliner.app`을 Applications로 끌어다 놓아요. Apple Silicon · Intel 파이썬이 둘 다 들어 있어요. 창은 크롬이 아니라 앱 자체 창(pywebview — 맥 내장 WebKit)이라 크롬이 없어도 돼요 · 새 창은 파일 › 새 창(⌘N). 데이터는 `~/Library/Application Support/Outliner` (이 폴더 방식의 `data/`와 따로 — 옮기려면 `data/` 안의 것을 그리로 복사). 기록은 `~/Library/Logs/Outliner.log`. 애플 개발자 서명이 없어서 다른 맥에서는 처음 한 번 '그래도 열기'(시스템 설정 › 개인정보 보호 및 보안)가 필요해요.
-  - **안드로이드 `Outliner.apk`** (`bash packaging/android/build_apk.sh` — JDK 17+ · 안드로이드 SDK · python3.12 필요): 설치만 하면 Termux 없이 열려요. 앱 안의 파이썬(Chaquopy)이 서버를 `127.0.0.1:4301`에 켜고 WebView로 보여 줘요. 데이터는 앱 안(앱을 지우면 같이 지워져요 — Dropbox 맞추기나 내보내기로 옮겨요). 내려받기는 휴대폰 '다운로드' 폴더로, 바깥 링크(Dropbox 허용하기 …)는 휴대폰 브라우저로 열려요. 서명 키는 `~/.android/outliner-release.jks` — 같은 키로 만들어야 업데이트 설치가 돼요.
+  - **안드로이드 `Outliner.apk`** (`bash packaging/android/build_apk.sh` — JDK 17+ · 안드로이드 SDK · python3.12 필요): 설치만 하면 열려요. 앱 안의 파이썬(Chaquopy)이 서버를 `127.0.0.1:4301`에 켜고 WebView로 보여 줘요. 데이터는 앱 안(앱을 지우면 같이 지워져요 — Dropbox 맞추기나 내보내기로 옮겨요). 내려받기는 휴대폰 '다운로드' 폴더로, 바깥 링크(Dropbox 허용하기 …)는 휴대폰 브라우저로 열려요. 서명 키는 `~/.android/outliner-release.jks` — 같은 키로 만들어야 업데이트 설치가 돼요.
 - 처음 실행할 때만 이 폴더 안에 `.venv`(전용 파이썬 환경)를 만들고 필요한 패키지(flask)를 내려받아요. 1~2분 걸리고 인터넷이 필요해요. 그다음부터는 바로 열려요.
-- 파이썬 3.9 이상이 있어야 해요. 없으면 python.org 다운로드 페이지를 열어 줘요 (윈도우는 설치할 때 "Add python.exe to PATH"를 체크해요).
+- 파이썬 3.9 이상이 있어야 해요. 없으면 python.org 다운로드 페이지를 열어 줘요.
 - `requirements.txt`가 바뀌면 다음 실행 때 알아서 다시 설치해요. 꼬였을 때는 `.venv` 폴더를 지우고 다시 실행하면 처음부터 새로 준비해요.
 - 앱 창을 모두 닫으면 서버도 꺼지고 터미널 창도 끝나요. 앱이 켜져 있는 동안에는 터미널 창을 닫지 마세요.
 
@@ -26,8 +21,6 @@ Flask + SQLite + 브라우저로 만든 내 컴퓨터용 outliner예요.
 ```
 Outliner.command   맥 실행 파일 (더블클릭)
 install.sh         다른 맥 설치 · 업데이트 (curl … | bash — 공개 저장소 kimjungbeen/outliner에서 받아요)
-Outliner.bat       윈도우 실행 파일 (더블클릭)
-Outliner.sh        안드로이드 Termux 실행 파일 (처음 한 번 bash Outliner.sh → Termux:Widget 바로가기)
 requirements.txt   필요한 파이썬 패키지
 packaging/         publish_github.sh(공개 저장소에 올리기) · 설치 파일 만들기 — mac/build_dmg.sh(파이썬 · pywebview를 넣은 Outliner.app → dmg) · android/(Chaquopy WebView 앱 · build_apk.sh)
 src/               앱 코드
@@ -237,7 +230,7 @@ python tests/commands_test.py <포트> <포트2>   # 명령 알파벳 순 · 단
 **앱에 노드로 추가**를 켜면 인쇄 창 없이 서버가 Chrome/Edge(headless)로 PDF를 만들어 첨부로 저장하고, 그 PDF 항목을 현재 화면 맨 아래(항목을 골랐으면 고른 항목 아래)에 넣어요.
 
 ## 전용 창으로 실행 (화면 크게)
-`Outliner.command` / `Outliner.bat` 또는 `python src/launcher.py` — 주소창·탭 없는 창으로 열려요. Chrome/Edge 앱 모드(`--app`)를 쓰고, 둘 다 없으면 기본 브라우저로 열어요. `--fullscreen` 으로 전체 화면.
+`Outliner.command` 또는 `python src/launcher.py` — 주소창·탭 없는 창으로 열려요. Chrome/Edge 앱 모드(`--app`)를 쓰고, 둘 다 없으면 기본 브라우저로 열어요. `--fullscreen` 으로 전체 화면.
 - **여러 창**: 실행 파일(`launcher.py`)을 한 번 더 실행하면 서버를 새로 켜지 않고 창만 하나 더 열어요. 같은 서버라 서로 실시간 반영돼요.
 - 서버는 **마지막 창이 닫히면** 함께 꺼져요 (창이 하나라도 남아 있으면 계속 켜져 있어요).
 - 보안: 다른 웹사이트가 이 앱으로 몰래 보내는 요청(쓰기·가져오기)과 127.0.0.1·localhost 가 아닌 이름으로 들어온 접속은 거절해요.
@@ -275,8 +268,6 @@ python tests/commands_test.py <포트> <포트2>   # 명령 알파벳 순 · 단
 - **배치 바꾸기**: 명령 `mobile-keys` — Termux의 `extra-keys`와 같은 형식이에요. 예: `[["ESC","/","-","HOME","UP","END","PGUP"],["TAB","CMD","CTRL","OPT","LEFT","DOWN","RIGHT"]]`.
   키 이름(ESC TAB CMD CTRL OPT SHIFT UP DOWN LEFT RIGHT HOME END PGUP PGDN DEL) 또는 글자 하나, `{"key": "-", "popup": "|"}`처럼 쓰면 키를 **위로 밀었을 때** 두 번째 키. DB에 저장돼 같은 서버의 모든 기기가 같은 배치를 써요.
 - 키를 눌러도 입력 칸의 커서가 유지돼요.
-Termux 실행: 위 '실행'의 `bash Outliner.sh`(Termux:Widget 바로가기) — 손으로는 `pkg install python && pip install flask` → `python src/server.py` → 폰 크롬에서 `http://127.0.0.1:4300`.
-새 버전으로 바꾸기: 새 압축 파일을 같은 자리에 덮어 풀고(`unzip -o` — `data` 폴더의 글 · 첨부는 그대로) 서버를 껐다 켜요(위젯은 'Outliner'만 눌러도 코드가 바뀐 걸 알고 새로 켜요, 손으로는 Ctrl+C → `python src/server.py`). 화면은 새로고침만 하면 새 파일을 받아요 (앱 파일은 매번 바뀌었는지 물어봐요 — `Cache-Control: no-cache`).
 테스트: `python3 tests/mobile_test.py <앱 포트>`
 
 ## 스크롤은 사용자가 움직일 때만
